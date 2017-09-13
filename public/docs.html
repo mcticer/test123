@@ -1,0 +1,1990 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <link rel="stylesheet" href="/css" >
+    <title>Punch++ REST API Documentation</title>
+  </head>
+  <body>
+    <div class="container">
+      <div class="jumbotron" style="margin-top:30px;">
+        <h1>Docs</h1>
+        <p>Punch++ REST API documentation</p>
+      </div>
+
+      <div class='col-md-12'>
+        <ul class="nav nav-pills">
+          <li role="presentation"><a href='#authentication'>Auth</a></li>
+          <li role="presentation"><a href="#analytics">Analytics</a></li>
+          <li role="presentation"><a href="#results">Result Sets</a></li>
+          <li role="presentation"><a href="#notes">Notes</a></li>
+          <li role="presentation"><a href="#users">Users</a></li>
+        </ul>
+      </div>
+
+      <div class='col-md-12'>
+        <a id='authentication'></a>
+        <h2>Authentication</h2>
+        <p>The authentication scheme uses three methods to connect to the REST API in an authenticated manner: Session login/logout, API Key and Basic Authorization.</p>
+        <h3>API Key</h3>
+        <p>API Key authentication is usable simply by adding an http header with a key of 'apikey' and a value of your apikey (visible from your user page), your key can be attached to any request. This will let you execute any path to which your role has privileges. <p>
+        <p>Example Header: apikey:5862e5ab11dbab78f1b8c0cf</p>
+        <h3>Basic Authorization</h3>
+        <p>Basic Auth is also enabled via <a href="https://tools.ietf.org/html/rfc1945#section-11.1">RFC 1945 Section 11.1</a>. Using your user_name and password, you can attach an authorization header to any request. This will let you execute any path to which your role has privileges.</p>
+        <p>Example Header: Authorization: Basic QWxhZGRpbjpvcGVuIHNlc2FtZQ==</p>
+        <h3>Session Login/Logout Paths</h3>
+        <p> POST to /login with body data containing a valid user_name/password, will receive a 200 response and establish a session for further auth-less inqueries so long as the session id is preserved and sent with every request.</p>
+        <p>DELETE /logout will remove that session. </p>
+        <div class="col-md-5">
+          <table class="table table-striped">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/login</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">POST</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>user_name=[string]</li>
+                  <li>password=[string]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {user object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Not Authorized"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class="col-md-offset-1 col-md-5">
+          <table class="table table-striped">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/logout</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">DELETE</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                </ul>
+                <div class="alert alert-warning">
+                  * Sessions are automatically destroyed after 14 days.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Not Authorized"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </div>
+      </div>
+
+      <div class='col-md-12'>
+        <a id='analytics'></a>
+        <h2>Analytics</h2>
+        <p>Analytics are the bedrock of the Repository. This is a model that defines what aspects we are keeping track of and what they look like. We expect this will evolve over time as use-cases and problem domains become clearer. By creating/updating an Analytic, you will create a new Result Set automatically. This is why query, query_engine, and result_set are string/text entries in the CREATE and UPDATE methods, but are not actually part of the analytics model. This is a one-to-many relationship that is dependent on the reporting user's environment.</p>
+
+        <div class='col-md-12'>
+          <div class="col-md-6">
+            <h3>Analytic Specification</h3>
+            <ul>
+              <li>id: [ObjectId, corresponds to valid User.id]</li>
+              <li>analytic_name: [String]</li>
+              <li>analytic: [String]</li>
+              <li>analytic_type: [String]</li>
+              <li>analytic_format: [String]</li>
+              <li>tlp: [String, must be "White","Green","Amber","Red"]</li>
+              <li>notes: [Array of ObjectIds, corresponds with Note.id]</li>
+              <li>result_sets: [Array of ObjectIds, corresponds with ResultSet.id]</li>
+              <li>user_id: [ObjectId, corresponds to User.id]</li>
+              <li>created_at: [epoch timestamp]</li>
+              <li>updated_at: [epoch timestamp]</li>
+              <li>version: [Integer, auto-increments on update]</li>
+            </ul>
+
+            <h3>Relationships (analytics:other)</h3>
+            <ul>
+              <li>Results: 1:many</li>
+              <li>Notes: 1:many</li>
+              <li>Users: many:1</li>
+            </ul>
+          </div>
+
+          <div class='col-md-6'>
+            <h3>Analytic Example</h3>
+            <p>
+              <xmp>
+                {
+                  "_id": "33",
+                  "analytic_name": "Finds AnglerEK with index.php",
+                  "analytic": "^https?:\/\/[^\x2f]+\/index\.php?ek=Angler$",
+                  "analytic_type": "pcre_url",
+                  "analytic_format": "pcre",
+                  "tlp": "green",
+                  "user_id": "9",
+                  "version": "11",
+                  "created_at": "1482355401698",
+                  "updated_at": "1482355452312",
+                  "results": [
+                    "23",
+                    "58"
+                  ],
+                  "notes": [
+                    "67",
+                    "136"
+                  ]
+                }
+              </xmp>
+            </p>
+          </div>
+        </div>
+
+        <div class='col-md-7'>
+          <h3>Analytics Path Minimum Access Levels</h3>
+          <table class="table table-striped col-md-6">
+            <tr><td>Index</td><td>User</td></tr>
+            <tr><td>Create</td><td>User</td></tr>
+            <tr><td>Update</td><td>User</td></tr>
+            <tr><td>Show</td><td>User</td></tr>
+            <tr><td>Delete</td><td>User (if author) or Administrator</td></tr>
+          </table>
+        </div>
+
+        <div class='col-md-12'>
+          <h3>Path Specifications</h3>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Show All Analytics</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/analytics</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: [{analytic object},{analytic object},{analytic object}]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Show A Single Analytic</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/analytics/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {analytic object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Analytic with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+
+        <div class='col-md-5'>
+          <h4>Create a new Analytic</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/analytics/</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">POST</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>analytic_name=[string]</li>
+                  <li>analytic=[string]</li>
+                  <li>analytic_type=[string]</li>
+                  <li>analytic_format=[string]</li>
+                  <li><strong>Optional</strong></li>
+                  <li>tlp=[string]</li>
+                  <li>query=[string]</li>
+                  <li>query_engine=[string]</li>
+                  <li>results=[string]</li>
+                  <li>notes=[string]</li>
+                </ul>
+                <div class="alert alert-warning">
+                  * If you specify 'query', you need to specify 'query_engine', and 'results' as well, or it will be rejected.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {new analytic object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Analytic is invalid.","fields":[analytic field names that are invalid]}</td></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Update an Analytic</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/analytics/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">PUT</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Optional</strong></li>
+                  <li>name=[string]</li>
+                  <li>analytic=[string]</li>
+                  <li>analytic_type=[string]</li>
+                  <li>analytic_format=[string]</li>
+                  <li>tlp=[string]</li>
+                </ul>
+                <div class="alert alert-warning">
+                  * Results and Notes are not updated through the /analytics interface, use /results or /notes for that.
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {updated analytic object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Analytic is invalid.","fields":[analytic field names that are invalid]}</td></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td>{"error": "Analytic is invalid","fields": ["analytic_id"],"error_message": "Provided analytic is not a valid analytic id."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Delete A Single Analytic</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/analytics/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">DELETE</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Analytic with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+      </div>
+
+      <div class='col-md-12'>
+        <a id='results'></a>
+        <h2>Result Sets</h2>
+        <p>Result sets are stored results from query engines. These can be Hive TSV output or any other type of text data. Perhaps in time, we'll update this to be any media type to support graph database out put and pictures. We'll see.</p>
+
+        <div class='col-md-12'>
+          <div class="col-md-6">
+            <h3>Result Set Specification</h3>
+            <ul>
+              <li>id: [ObjectId]</li>
+              <li>query_engine: [String]</li>
+              <li>query: [String]</li>
+              <li>results: [String]</li>
+              <li>user_id: [ObjectId, corresponds to User.id]</li>
+              <li>synced: [Boolean]</li>
+              <li>uploaded: [Boolean]</li>
+              <li>created_at: [epoch timestamp]</li>
+              <li>updated_at: [epoch timestamp]</li>
+            </ul>
+
+            <h3>Relationships (results:other)</h3>
+            <ul>
+              <li>Analytics: many:1</li>
+              <li>Users: many:1</li>
+            </ul>
+          </div>
+
+          <div class='col-md-6'>
+            <h3>Results Set Example</h3>
+            <p>
+              <xmp>
+                {
+                  "_id": "585af2c9a572ba6c84872b44",
+                  "updated_at": "1482355401746",
+                  "created_at": "1482355401746",
+                  "query_engine": "hive",
+                  "query": "SELECT * FROM stuff WHERE things",
+                  "results": "1286536311.352    826 192.168.0.68 TCP_MISS/200 507
+                              1286536311.490    794 192.168.0.68 TCP_MISS/200 507
+                              1286536311.511    800 192.168.0.68 TCP_MISS/200 507",
+                  "user_id": "585af2c6a572ba6c84872b16",
+                  "analytic_id": "585af2c9a572ba6c84872b39",
+                }
+              </xmp>
+            </p>
+          </div>
+        </div>
+
+        <div class='col-md-7'>
+          <h3>Result Set Path Minimum Access Levels</h3>
+          <table class="table table-striped col-md-6">
+            <tr><td>Index</td><td>User</td></tr>
+            <tr><td>Create</td><td>User</td></tr>
+            <tr><td>Update</td><td>User</td></tr>
+            <tr><td>Show</td><td>User</td></tr>
+            <tr><td>Delete</td><td>Gatekeeper</td></tr>
+          </table>
+        </div>
+
+        <div class='col-md-12'>
+          <h3>Path Specifications</h3>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Show All Result Sets</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/results</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: [{results object},{results object},{results object}]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Show A Single Result Set</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/results/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {results object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Result Set with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Create a new Result Set</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/results/</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">POST</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>query=[string]</li>
+                  <li>query_engine=[string]</li>
+                  <li>results=[string]</li>
+                  <li>user_id=[ObjectId]</li>
+                  <li>analytic_id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {new results object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Result Set is invalid.","fields":[results field names that are invalid]}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Update a Result Set</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/results/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">PUT</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Optional</strong></li>
+                    <li>query=[string]</li>
+                    <li>query_engine=[string]</li>
+                    <li>results=[string]</li>
+                    <li>user_id=[ObjectId]</li>
+                    <li>analytic_id=[ObjectId]</li>
+                  </ul>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {updated results object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Result Set is invalid.","fields":[results field names that are invalid]}</td></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td>{"error": "Result Set is invalid","fields": ["results_id"],"error_message": "Provided result set is not a valid results id."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Delete A Single Result Set</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/results/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">DELETE</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Result Set with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+      </div>
+
+      <div class='col-md-12'>
+        <a id='notes'></a>
+        <h2>Notes</h2>
+        <p>Notes are text/reports discussing aspects of the Analytic that do not require a new version.</p>
+
+        <div class='col-md-12'>
+          <div class="col-md-6">
+            <h3>Notes Specification</h3>
+            <ul>
+              <li>_id: [ObjectId]</li>
+              <li>content: [String]</li>
+              <li>author_id: [ObjectId, corresponds to User._id]</li>
+              <li>analytic_id: [ObjectId, corresponds to Analytic._id]</li>
+              <li>synced: [Boolean]</li>
+              <li>uploaded: [Boolean]</li>
+              <li>created_at: [epoch timestamp]</li>
+              <li>updated_at: [epoch timestamp]</li>
+            </ul>
+
+            <h3>Relationships (notes:other)</h3>
+            <ul>
+              <li>Analytics: many:1</li>
+              <li>Users: many:1</li>
+            </ul>
+          </div>
+
+          <div class='col-md-6'>
+            <h3>Notes Example</h3>
+            <p>
+              <xmp>
+                {
+                  "_id": "585af2c9a572ba6c84872b4b",
+                  "updated_at": "1482355401747",
+                  "created_at": "1482355401747",
+                  "content": "This is actually how Angler EK works..",
+                  "author_id": "585af2c6a572ba6c84872b16",
+                  "analytic_id": "585af2c9a572ba6c84872b3e"
+                }
+              </xmp>
+            </p>
+          </div>
+        </div>
+
+        <div class='col-md-7'>
+          <h3>Notes Path Minimum Access Levels</h3>
+          <table class="table table-striped col-md-6">
+            <tr><td>Index</td><td>User</td></tr>
+            <tr><td>Create</td><td>User</td></tr>
+            <tr><td>Update</td><td>User</td></tr>
+            <tr><td>Show</td><td>User</td></tr>
+            <tr><td>Delete</td><td>Gatekeeper</td></tr>
+          </table>
+        </div>
+
+        <div class='col-md-12'>
+          <h3>Path Specifications</h3>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Show All Notes</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/notes</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: [{notes object},{notes object},{notes object}]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Show A Single Note</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/notes/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {notes object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Note with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Create a new Note</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/notes/</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">POST</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>content=[string]</li>
+                  <li>author_id=[ObjectId]</li>
+                  <li>analytic_id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {new notes object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Note is invalid.","fields":[notes field names that are invalid]}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Update a Note</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/notes/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">PUT</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Optional</strong></li>
+                  <li>content=[string]</li>
+                  <li>author_id=[ObjectId]</li>
+                  <li>analytic_id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {updated notes object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Note is invalid.","fields":[notes field names that are invalid]}</td></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td>{"error": "Note is invalid","fields": ["notes_id"],"error_message": "Provided note _id is not a valid notes id."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Delete A Single Note</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/notes/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">DELETE</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Note with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+      </div>
+
+      <div class='col-md-12'>
+        <a id='users'></a>
+        <h2>Users</h2>
+        <p>Users use the API. I don't think this needs an explanation.</p>
+
+        <div class='col-md-12'>
+          <div class="col-md-6">
+            <h3>users Specification</h3>
+            <ul>
+              <li>id: [ObjectId]</li>
+              <li>user_name: [String]</li>
+              <li>real_name: [String]</li>
+              <li>email_address: [String]</li>
+              <li>phone_number: [String]</li>
+              <li>api_key: [String]</li>
+              <li>admin: [Boolean]</li>
+              <li>active: [Boolean]</li>
+              <li>created_at: [epoch timestamp]</li>
+              <li>updated_at: [epoch timestamp]</li>
+            </ul>
+
+            <h3>Relationships (users:other)</h3>
+            <ul>
+              <li>Analytics: 1:many</li>
+              <li>Notes: 1:many</li>
+              <li>Results: 1:many</li>
+            </ul>
+          </div>
+
+          <div class='col-md-6'>
+            <h3>User Example</h3>
+            <p>
+              <xmp>
+                {
+                  "id": 1,
+                  "user_name": "ryan",
+                  "real_name": "Ryan C. Moon",
+                  "email_address": "ryan@organizedvillainy.com",
+                  "phone_number": "714-234-5678",
+                  "active": false,
+                  "api_key": "9f861ad33c3934f773278bf5a6735a6ed41cf6ce34f3d392",
+                  "admin": true,
+                  "created_at": "2017-06-13T16:39:00.000Z",
+                  "updated_at": "2017-06-13T16:39:00.000Z"
+              }
+              </xmp>
+            </p>
+          </div>
+        </div>
+
+        <div class='col-md-7'>
+          <h3>User Path Minimum Access Levels</h3>
+          <table class="table table-striped col-md-6">
+            <tr><td>Index</td><td>User</td></tr>
+            <tr><td>Create</td><td>Admin</td></tr>
+            <tr><td>Update</td><td>User (if user) or Admin</td></tr>
+            <tr><td>Show</td><td>User (if user) or Admin</td></tr>
+            <tr><td>Delete</td><td>Admin</td></tr>
+          </table>
+        </div>
+
+        <div class='col-md-12'>
+          <h3>Path Specifications</h3>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Show All Users</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/users</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: [{users object},{users object},{users object}]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Show A Single User</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/users/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {users object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"User with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Create a new User</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/users/</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">POST</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>user_name: [String]</li>
+                  <li>real_name: [String]</li>
+                  <li>email_address: [String]</li>
+                  <li>password: [String]</li>
+                  <li>password_confirmation: [String]</li>
+                  <li><strong>Optional</strong></li>
+                  <li>phone_number: [String]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {new user object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"User is invalid.","fields":[users field names that are invalid]}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Update a User</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/users/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">PUT</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Optional</strong></li>
+                  <li>user_name: [String]</li>
+                  <li>real_name: [String]</li>
+                  <li>email_address: [String]</li>
+                  <li>phone_number: [String]</li>
+                  <li>password: [String]</li>
+                  <li>password_confirmation: [String]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {updated user object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"User is invalid.","fields":[users field names that are invalid]}</td></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td>{"error": "User is invalid","fields": ["user_id"],"error_message": "Provided user _id is not a valid user id."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Delete A Single User</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/users/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">DELETE</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"User with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+      </div>
+
+      <div class='col-md-12'>
+        <a id='roles'></a>
+        <h2>Roles</h2>
+        <p>Roles determine what permissions the user has to interact with the ARC back-end. There are three roles presently: user, gatekeeper, and administrator. Users are regular users of the ARC and use it to post, read, update analytics. Gatekeepers are the organization-specific administrators for creating/adding new users from that organization. Administrators are site administrators empowered to help fix problems or correct ARC-service issues.</p>
+
+        <div class='col-md-12'>
+          <div class="col-md-6">
+            <h3>Role Specification</h3>
+            <ul>
+              <li>_id: [ObjectId]</li>
+              <li>name: [String]</li>
+              <li>created_at: [epoch timestamp]</li>
+              <li>updated_at: [epoch timestamp]</li>
+            </ul>
+
+            <h3>Relationships (roles:other)</h3>
+            <ul>
+              <li>Users: 1:many</li>
+            </ul>
+          </div>
+
+          <div class='col-md-6'>
+            <h3>Role Example</h3>
+            <p>
+              <xmp>
+                {
+                  "_id": "585af2c6a572ba6c84872b13",
+                  "updated_at": "1482355398579",
+                  "created_at": "1482355398579",
+                  "name": "administrator"
+                }
+              </xmp>
+            </p>
+          </div>
+        </div>
+
+        <div class='col-md-7'>
+          <h3>Roles Path Minimum Access Levels</h3>
+          <table class="table table-striped col-md-6">
+            <tr><td>Index</td><td>User</td></tr>
+            <tr><td>Create</td><td>Administrator</td></tr>
+            <tr><td>Update</td><td>Administrator</td></tr>
+            <tr><td>Show</td><td>User</td></tr>
+            <tr><td>Delete</td><td>Administrator</td></tr>
+          </table>
+        </div>
+
+        <div class='col-md-12'>
+          <h3>Path Specifications</h3>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Show All Roles</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/roles</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: [{roles object},{roles object},{roles object}]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Show A Single Role</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/roles/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {roles object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Role with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Create a new Role</h4>
+          <div class="alert alert-warning">*Do not do this without consulting with the entire group.</div>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/roles/</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">POST</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>name: [String]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {new roles object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Role is invalid.","fields":[roles field names that are invalid]}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Update a Role</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/roles/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">PUT</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Optional</strong></li>
+                  <li>name: [String]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {updated role object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Role is invalid.","fields":[roles field names that are invalid]}</td></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td>{"error": "Role is invalid","fields": ["role_id"],"error_message": "Provided role _id is not a valid role id."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Delete A Single Role</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/roles/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">DELETE</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Role with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+      </div>
+
+      <div class='col-md-12'>
+        <a id='orgs'></a>
+        <h2>Orgs</h2>
+        <p>Organizations are the participating entities that are members of the ARC. This serves to keep track of where analytics came from and who is responsible for them.</p>
+
+        <div class='col-md-12'>
+          <div class="col-md-6">
+            <h3>Organization Specification</h3>
+            <ul>
+              <li>_id: [ObjectId]</li>
+              <li>name: [String]</li>
+              <li>gatekeeper: [ObjectId, correlates with User._id]</li>
+              <li>synced: [Boolean]</li>
+              <li>uploaded: [Boolean]</li>
+              <li>created_at: [epoch timestamp]</li>
+              <li>updated_at: [epoch timestamp]</li>
+            </ul>
+
+            <h3>Relationships (orgs:other)</h3>
+            <ul>
+              <li>Users: 1:many</li>
+            </ul>
+          </div>
+
+          <div class='col-md-6'>
+            <h3>Org Example</h3>
+            <p>
+              <xmp>
+                {
+                  "_id": "585af2c9a572ba6c84872b25",
+                  "updated_at": "1482355401613",
+                  "created_at": "1482355401613",
+                  "name": "Kegular Inc.",
+                  "gatekeeper": "585af2c6a572ba6c84872b16"
+                }
+              </xmp>
+            </p>
+          </div>
+        </div>
+
+        <div class='col-md-7'>
+          <h3>Organization Path Minimum Access Levels</h3>
+          <table class="table table-striped col-md-6">
+            <tr><td>Index</td><td>User</td></tr>
+            <tr><td>Create</td><td>Administrator</td></tr>
+            <tr><td>Update</td><td>Administrator</td></tr>
+            <tr><td>Show</td><td>User</td></tr>
+            <tr><td>Delete</td><td>Administrator</td></tr>
+          </table>
+        </div>
+
+        <div class='col-md-12'>
+          <h3>Path Specifications</h3>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Show All Orgs</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/orgs</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: [{orgs object},{orgs object},{orgs object}]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Show A Single Org</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/orgs/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">GET</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {orgs object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Org with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Create a new Org</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/orgs/</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">POST</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>name: [String]</li>
+                  <li><strong>Optional</strong></li>
+                  <li>gatekeeper: [ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {new orgs object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Org is invalid.","fields":[orgs field names that are invalid]}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-offset-1 col-md-5'>
+          <h4>Update an Org</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/orgs/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">PUT</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong></li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Optional</strong></li>
+                  <li>name: [String]</li>
+                  <li>gatekeeper: [ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                  <li>Content: {updated org object}</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Invalid</td><td>400</td><td>{"error":"Org is invalid.","fields":[orgs field names that are invalid]}</td></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td>{"error": "Org is invalid","fields": ["org_id"],"error_message": "Provided _id is not a valid org id."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+        <div class='col-md-5'>
+          <h4>Delete A Single Org</h4>
+          <table class="table table-striped col-md-4">
+            <tr>
+              <td class="col-md-1"><h4>Path</h4</td>
+              <td class="col-md-3">/orgs/:id</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>HTTP Method</h4></td>
+              <td class="col-md-3">DELETE</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>URL Params</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li><strong>Required</strong><li>
+                  <li>id=[ObjectId]</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Data Params</h4></td>
+              <td class="col-md-3">None</td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Success Response</h4></td>
+              <td class="col-md-3">
+                <ul>
+                  <li>Code: 200</li>
+                </ul>
+              </td>
+            </tr>
+            <tr>
+              <td class="col-md-1"><h4>Error Responses</h4></td>
+              <td class="col-md-3">
+                <table>
+                  <tr><th>Type</th><th>Code&nbsp;&nbsp;</th><th>Content</th></tr>
+                  <tr><td>Unauthorized</td><td>401</td><td>{"error":"Unauthorized - Please log in"}</td></tr>
+                  <tr><td>Not Found</td><td>404</td><td>{"error":"Org with that id does not exist."}</td></tr>
+                  <tr><td>Server Error</td><td>500</td><td>{server error object}</td></tr>
+                </table>
+              </td>
+            </tr>
+
+          </table>
+        </div>
+
+      </div>
+
+    </div>
+  </body>
+</html>
